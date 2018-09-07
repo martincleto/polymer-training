@@ -57,12 +57,14 @@
       }
 
       login (evt) {
-        evt.preventDefault();
+        if (evt) evt.preventDefault();
+
         return this.$.auth.signInWithPopup();
       }
 
       logout (evt) {
-        evt.preventDefault();
+        if (evt) evt.preventDefault();
+        
         return this.$.auth.signOut();
       }
     }
