@@ -127,15 +127,6 @@
         };
       }
 
-
-      _onSignedInChanged (evt) {
-        console.log('signedIn', this.$.auth.signedIn);
-        if (this.$.auth.signedIn) {
-            this.loading = true;
-            this._getData();
-        }
-      }
-
       _add () {
         const newPerson = Object.assign({}, this.$.form.payload);
 
@@ -202,6 +193,12 @@
         this.$.userLogin.logout();
       }
 
+      _onSignedInChanged (evt) {
+        if (this.$.auth.signedIn) {
+          this.loading = true;
+          this._getData();
+        }
+      }
       _peopleChanged () {
         return this._calculateAverage();
       }
