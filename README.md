@@ -35,7 +35,7 @@ Your application is already set up to be tested via [web-component-tester](https
 ## TO-DO
 
 - [ ] Chore: Add coverture to tests
-- [ ] Feature: Integrate Firebase
+- [x] ~~Feature: Integrate Firebase~~
 - [ ] Feature: Remove person from people list
 - [ ] Feature: Edit person
 
