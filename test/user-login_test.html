@@ -26,6 +26,8 @@
         let elementShadowRoot;
 
         setup(() => {
+          replace('firebase-auth').with('fake-firebase-auth');
+
           element = fixture('BasicTestFixture');
           elementShadowRoot = element.shadowRoot;
         });
@@ -33,10 +35,10 @@
         test('should use firebase-auth element with Google as provider', () => {
           element = fixture('BasicTestFixture');
           elementShadowRoot = element.shadowRoot;
-          firebaseAuthElement = elementShadowRoot.querySelector('firebase-auth');
+          firebaseAuthElement = elementShadowRoot.querySelector('fake-firebase-auth');
 
           expect(firebaseAuthElement).not.to.be.a.null;
-          expect(firebaseAuthElement.provider).to.be.equal('google');
+          expect(firebaseAuthElement.getAttribute('provider')).to.be.equal('google');
         });
 
         test('should provide a login public method', () => {
@@ -47,26 +49,44 @@
           expect(typeof element.logout).to.be.equal('function');
         });
 
-        suite('when user is not logged', () =>{
-          test('should show a button to sign in', () => {
-            const button = elementShadowRoot.querySelector('a');
+        suite('when user is not logged', () => {
+          test('should show a button to sign in', done => {
+            element.user = null;
+            
+            flush(() => {
+              const button = elementShadowRoot.querySelector('a');
 
-            console.log(elementShadowRoot);
-
-            expect(button).not.to.be.a.null;
-            expect(button.textContent).to.be.equal('sign in');
+              expect(button).not.to.be.a.null;
+              expect(button.textContent).to.be.equal('sign in');
+              done();
+            });
           });
         });
 
-        suite('when user is logged', () =>{
-          test('should not show any button', () => {
+        suite('when user is logged', () => {
+          setup(() => {
             element.user = {
-              displayName: 'Mighty Thor'
+              email: 'mighty.thor@walhalla.com'
             };
+          });
 
-            const button = elementShadowRoot.querySelector('a');
+          test('show should the user email', done => {
+            flush(() => {
+              const userEmail = elementShadowRoot.querySelector('.user-email').textContent.trim();
 
-            expect(button).not.to.be.a.null;
+              expect(userEmail).to.be.equal(element.user.email);
+              done();
+            });
+          });
+
+          test('should show a button to sign out', done => {
+            flush(() => {
+              const button = elementShadowRoot.querySelector('a');
+
+              expect(button).not.to.be.a.null;
+              expect(button.textContent).to.be.equal('sign out');
+              done();
+            });
           });
         });
       });

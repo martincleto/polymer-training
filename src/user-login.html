@@ -1,20 +1,27 @@
 <link rel="import" href="../bower_components/polymer/polymer-element.html">
 <link rel="import" href="../bower_components/polymerfire/firebase-auth.html">
+<link rel="import" href="../bower_components/shadycss/apply-shim.html">
+<link rel="import" href="shared-styles.html">
 
 <dom-module id="user-login">
-  <style include="shared-styles">
-    :host {
-      display: block;
-      font-size: .8rem;
-    }
-
-    paper-button {
-      display: block;
-      margin-left: 0;
-    }
-  </style>
-
   <template>
+    <style include="shared-styles">
+      :host {
+        display: block;
+      }
+
+      .user-info {
+        font-size: var(--user-login-info-font-size, 1rem);
+        color: var(--user-login-info-color, inherit);
+
+        @apply --user-login-info;
+      }
+
+      .user-email {
+        @apply --user-login-email;
+      }
+    </style>
+
     <firebase-auth
       id="auth"
       user="{{user}}"
@@ -23,8 +30,15 @@
       on-error="handleError">
     </firebase-auth>
 
-    <p hidden$="[[user]]">Please <a href="#" on-click="login">sign in</a> with a valid Google account.</p>
-    <p hidden$=[[!user]]>[[user.email]] <a href="#" on-click="logout">[logout]</a></p>
+    <template is="dom-if" if="[[!user]]">
+      <p>Please <a href="#" on-click="login">sign in</a> with a valid Google account.</p>
+    </template>
+
+    <template is="dom-if" if="[[user]]">
+      <div class="user-info">
+        <span class="user-email">[[user.email]]</span>
+        <a href="#" on-click="logout">sign out</div>
+    </template>
   </template>
 
   <script>

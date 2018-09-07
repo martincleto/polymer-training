@@ -1,7 +1,9 @@
-<link rel="import" href="../../bower_components/polymer/polymer-element.html">
-<link rel="import" href="../../bower_components/polymerfire/firebase-app.html">
-<link rel="import" href="../../bower_components/iron-ajax/iron-request.html">
+<link rel="import" href="../bower_components/polymer/polymer-element.html">
+<link rel="import" href="../bower_components/polymerfire/firebase-app.html">
+<link rel="import" href="../bower_components/polymerfire/firebase-auth.html">
+<link rel="import" href="../bower_components/polymerfire/firebase-query.html">
 <link rel="import" href="../../bower_components/paper-spinner/paper-spinner.html">
+<link rel="import" href="../bower_components/shadycss/apply-shim.html">
 <link rel="import" href="shared-styles.html">
 <link rel="import" href="user-login.html">
 <link rel="import" href="people-list-form.html">
@@ -13,12 +15,32 @@
         display: block;
         font-family: 'Roboto', sans-serif;
         padding: 1rem;
+
+        --user-login-info: {
+          position: absolute;
+          top: 0;
+          right: 0;
+          color: #555;
+          font-size: .9rem;
+          line-height: 1.8rem;
+          padding: 1rem 0;
+          margin: 0;
+        }
+
+        --user-login-email: {
+          display: none;
+        }
+      }
+
+      ul {
+        margin-bottom: 1rem;
       }
 
       li {
         padding: .5rem 1rem;
         margin-bottom: 1px;
       }
+
       people-list-form {
         margin-top: 2rem;
       }
@@ -64,6 +86,14 @@
         font-style: italic;
         padding: 0 1rem;
       }
+
+      @media (min-width: 600px) {
+        :host {
+          position: relative;
+
+          --user-login-email_-_display: inline;
+        }
+      }
     </style>
 
     <firebase-app
@@ -71,6 +101,7 @@
       database-url="https://people-list-2d26d.firebaseio.com/"
       api-key="AIzaSyDY8wMfnJxNulb8E7Kr0s-QC-YdOhGc5l8">
     </firebase-app>
+
     <firebase-auth
       id="auth"
       user="{{user}}"
@@ -81,7 +112,12 @@
 
     <user-login id="userLogin"></user-login>
 
-    <iron-request id="xhr"></iron-request>
+    <firebase-query
+      id="query"
+      path="/users/[[user.uid]]/people"
+      data={{people}}
+      on-data-changed="_onDataChanged"
+    ></firebase-query>
 
     <template is="dom-if" if="[[loading]]">
       <div class="loading">
@@ -92,15 +128,19 @@
 
     <div hidden$="[[!user]]">
 
+      <template is="dom-if" if="[[!people.length]]">
+        <p>Your people list is empty.</p>
+      </template>
+
       <ul>
-        <template is="dom-repeat" items="{{people}}">
-          <li class$="[[item.className]]">
-            [[item.firstName]] [[item.lastName]] ([[item.age]])
+        <template is="dom-repeat" items="{{people}}" as="person">
+          <li class$="[[person.className]]">
+            [[person.firstName]] [[person.lastName]] ([[person.age]])
           </li>
         </template>
       </ul>
 
-      <p class="note">People average age: <strong>{{ageAverage}}</strong></p>
+      <p class="note" hidden$="[[!people]]">People average age: <strong>{{ageAverage}}</strong></p>
 
       <people-list-form id="form" on-people-list-add="_add"></people-list-form>
 
@@ -122,7 +162,10 @@
             value: false
           },
           people: {
-            type: Array
+            type: Array,
+            value: function () {
+              return [];
+            }
           }
         };
       }
@@ -130,28 +173,17 @@
       _add () {
         const newPerson = Object.assign({}, this.$.form.payload);
 
-        newPerson.bgColor = this._getClassName(newPerson.age);
-        this.push('people', newPerson);
+        newPerson.className = this._getClassName(newPerson.age);
+        this.$.query.ref.push(newPerson);
       }
 
       _calculateAverage () {
+        if (!this.people) return;
+
         const accumulate = this.people.reduce((acc, person) => acc + parseInt(person.age, 10), 0);
         const formattedValue = (accumulate / this.people.length).toFixed(1);
 
         return formattedValue;
-      }
-
-      _fillInitialList (data) {
-        this.people = data.map(item => {
-          const className = this._getClassName(item.dob.age);
-
-          return {
-            firstName: item.name.first,
-            lastName: item.name.last,
-            age: item.dob.age,
-            className: className
-          }
-        });
       }
 
       _getClassName (age, range, classNames) {
@@ -173,34 +205,21 @@
         return this._getClassName(age, _range, _classNames);
       }
 
-      _getData () {
-        const request = this.$.xhr.send({ url: 'https://randomuser.me/api/?results=10' });
-
-        this.$.xhr.completes.then(
-          request => {
-            const response = JSON.parse(request.response);
-
-            this._fillInitialList(response.results);
-            this.loading = false;
-          },
-          rejected => {
-            console.error(rejected.error);
-          }
-        );
-      }
-
       _logout () {
         this.$.userLogin.logout();
+      }
+
+      _onDataChanged () {
+        this.loading = false;
       }
 
       _onSignedInChanged (evt) {
         if (this.$.auth.signedIn) {
           this.loading = true;
-          this._getData();
         }
       }
       _peopleChanged () {
-        return this._calculateAverage();
+          return this._calculateAverage();
       }
     }
 
