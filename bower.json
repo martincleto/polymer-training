@@ -9,7 +9,8 @@
     "paper-input": "^2.2.3",
     "paper-spinner": "^2.1.0",
     "iron-icons": "^2.1.1",
-    "iron-form": "^2.4.0"
+    "iron-form": "^2.4.0",
+    "polymerfire": "FirebaseExtended/polymerfire#^2.2.1"
   },
   "devDependencies": {
     "web-component-tester": "Polymer/web-component-tester#^6.0.0",

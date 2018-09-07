@@ -1,7 +1,9 @@
 <link rel="import" href="../../bower_components/polymer/polymer-element.html">
+<link rel="import" href="../../bower_components/polymerfire/firebase-app.html">
 <link rel="import" href="../../bower_components/iron-ajax/iron-request.html">
 <link rel="import" href="../../bower_components/paper-spinner/paper-spinner.html">
 <link rel="import" href="shared-styles.html">
+<link rel="import" href="user-login.html">
 <link rel="import" href="people-list-form.html">
 
 <dom-module id="people-list-app">
@@ -64,6 +66,21 @@
       }
     </style>
 
+    <firebase-app
+      auth-domain="people-list-2d26d.firebaseapp.com"
+      database-url="https://people-list-2d26d.firebaseio.com/"
+      api-key="AIzaSyDY8wMfnJxNulb8E7Kr0s-QC-YdOhGc5l8">
+    </firebase-app>
+    <firebase-auth
+      id="auth"
+      user="{{user}}"
+      on-signed-in-changed="_onSignedInChanged">
+    </firebase-auth>
+
+    <h1>People list</h2>
+
+    <user-login id="userLogin"></user-login>
+
     <iron-request id="xhr"></iron-request>
 
     <template is="dom-if" if="[[loading]]">
@@ -73,20 +90,21 @@
       </div>
     </template>
 
-    <h1>People list</h2>
+    <div hidden$="[[!user]]">
 
-    <ul>
-      <template is="dom-repeat" items="{{people}}">
-        <li class$="[[item.className]]">
-          [[item.firstName]] [[item.lastName]] ([[item.age]])
-        </li>
-      </template>
-    </ul>
+      <ul>
+        <template is="dom-repeat" items="{{people}}">
+          <li class$="[[item.className]]">
+            [[item.firstName]] [[item.lastName]] ([[item.age]])
+          </li>
+        </template>
+      </ul>
 
-    <p class="note">People average age: <strong>{{ageAverage}}</strong></p>
+      <p class="note">People average age: <strong>{{ageAverage}}</strong></p>
 
-    <people-list-form id="form" on-people-list-add="_add"></people-list-form>
+      <people-list-form id="form" on-people-list-add="_add"></people-list-form>
 
+    </div>
   </template>
 
   <script>
@@ -101,7 +119,7 @@
           },
           loading: {
             type: Boolean,
-            value: true
+            value: false
           },
           people: {
             type: Array
@@ -109,9 +127,13 @@
         };
       }
 
-      ready () {
-        super.ready();
-        this._getData();
+
+      _onSignedInChanged (evt) {
+        console.log('signedIn', this.$.auth.signedIn);
+        if (this.$.auth.signedIn) {
+            this.loading = true;
+            this._getData();
+        }
       }
 
       _add () {
@@ -162,6 +184,7 @@
 
       _getData () {
         const request = this.$.xhr.send({ url: 'https://randomuser.me/api/?results=10' });
+
         this.$.xhr.completes.then(
           request => {
             const response = JSON.parse(request.response);
@@ -173,6 +196,10 @@
             console.error(rejected.error);
           }
         );
+      }
+
+      _logout () {
+        this.$.userLogin.logout();
       }
 
       _peopleChanged () {

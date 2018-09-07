@@ -1,0 +1,58 @@
+<link rel="import" href="../bower_components/polymer/polymer-element.html">
+<link rel="import" href="../bower_components/polymerfire/firebase-auth.html">
+
+<dom-module id="user-login">
+  <style include="shared-styles">
+    :host {
+      display: block;
+      font-size: .8rem;
+    }
+
+    paper-button {
+      display: block;
+      margin-left: 0;
+    }
+  </style>
+
+  <template>
+    <firebase-auth
+      id="auth"
+      user="{{user}}"
+      provider="google"
+      status-known="{{statusKnown}}"
+      on-error="handleError">
+    </firebase-auth>
+
+    <p hidden$="[[user]]">Please <a href="#" on-click="login">sign in</a> with a valid Google account.</p>
+    <p hidden$=[[!user]]>[[user.email]] <a href="#" on-click="logout">[logout]</a></p>
+  </template>
+
+  <script>
+    class UserLogin extends Polymer.Element {
+      static get is () { return 'user-login'; }
+
+      static get properties () {
+        return {
+          user: {
+            type: Object
+          },
+          statusKnown: {
+            type: Object
+          }
+        };
+      }
+
+      login (evt) {
+        evt.preventDefault();
+        return this.$.auth.signInWithPopup();
+      }
+
+      logout (evt) {
+        evt.preventDefault();
+        return this.$.auth.signOut();
+      }
+    }
+
+    window.customElements.define(UserLogin.is, UserLogin);
+  </script>
+</dom-module>

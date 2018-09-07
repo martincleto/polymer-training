@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, minimum-scale=1, initial-scale=1, user-scalable=yes">
+
+    <title>user-login test</title>
+
+    <script src="../../bower_components/webcomponentsjs/webcomponents-loader.js"></script>
+    <script src="../../bower_components/web-component-tester/browser.js"></script>
+
+    <link rel="import" href="../../src/user-login.html">
+  </head>
+  <body>
+
+    <test-fixture id="BasicTestFixture">
+      <template>
+        <user-login></user-login>
+      </template>
+    </test-fixture>
+
+    <script>
+
+      suite('user-login', function() {
+        let element;
+        let elementShadowRoot;
+
+        setup(() => {
+          element = fixture('BasicTestFixture');
+          elementShadowRoot = element.shadowRoot;
+        });
+
+        test('should use firebase-auth element with Google as provider', () => {
+          element = fixture('BasicTestFixture');
+          elementShadowRoot = element.shadowRoot;
+          firebaseAuthElement = elementShadowRoot.querySelector('firebase-auth');
+
+          expect(firebaseAuthElement).not.to.be.a.null;
+          expect(firebaseAuthElement.provider).to.be.equal('google');
+        });
+
+        test('should provide a login public method', () => {
+          expect(typeof element.login).to.be.equal('function');
+        });
+
+        test('should provide a logout public method', () => {
+          expect(typeof element.logout).to.be.equal('function');
+        });
+
+        suite('when user is not logged', () =>{
+          test('should show a button to sign in', () => {
+            const button = elementShadowRoot.querySelector('a');
+
+            console.log(elementShadowRoot);
+
+            expect(button).not.to.be.a.null;
+            expect(button.textContent).to.be.equal('sign in');
+          });
+        });
+
+        suite('when user is logged', () =>{
+          test('should not show any button', () => {
+            element.user = {
+              displayName: 'Mighty Thor'
+            };
+
+            const button = elementShadowRoot.querySelector('a');
+
+            expect(button).not.to.be.a.null;
+          });
+        });
+      });
+    </script>
+  </body>
+</html>
