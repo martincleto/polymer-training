@@ -1,0 +1,228 @@
+<link rel="import" href="../bower_components/polymer/polymer-element.html">
+<link rel="import" href="../bower_components/polymerfire/firebase-app.html">
+<link rel="import" href="../bower_components/polymerfire/firebase-auth.html">
+<link rel="import" href="../bower_components/polymerfire/firebase-query.html">
+<link rel="import" href="../../bower_components/paper-spinner/paper-spinner.html">
+<link rel="import" href="../bower_components/shadycss/apply-shim.html">
+<link rel="import" href="shared-styles.html">
+<link rel="import" href="user-login.html">
+<link rel="import" href="people-list-form.html">
+
+<dom-module id="people-list-app">
+  <template>
+    <style include="shared-styles">
+      :host {
+        display: block;
+        font-family: 'Roboto', sans-serif;
+        padding: 1rem;
+
+        --user-login-info: {
+          position: absolute;
+          top: 0;
+          right: 0;
+          color: #555;
+          font-size: .9rem;
+          line-height: 1.8rem;
+          padding: 1rem 0;
+          margin: 0;
+        }
+
+        --user-login-email: {
+          display: none;
+        }
+      }
+
+      ul {
+        margin-bottom: 1rem;
+      }
+
+      li {
+        padding: .5rem 1rem;
+        margin-bottom: 1px;
+      }
+
+      people-list-form {
+        margin-top: 2rem;
+      }
+
+      .loading {
+        position: absolute;
+        left: 0;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: #fff;
+        z-index: 9999
+      }
+
+      .loading span {
+        padding-left: 1rem;
+      }
+
+      .gt-39 {
+        background-color: #88efef;
+      }
+
+      .gt-29 {
+        background-color: #cbf2f2;
+      }
+
+      .gt-19 {
+        background-color: #eff7f7;
+      }
+
+      .lte-19 {
+        background-color: #fff;
+      }
+
+      .note {
+        color: #666;
+        font-size: .9rem;
+        font-style: italic;
+        padding: 0 1rem;
+      }
+
+      @media (min-width: 600px) {
+        :host {
+          position: relative;
+
+          --user-login-email_-_display: inline;
+        }
+      }
+    </style>
+
+    <firebase-app
+      auth-domain="people-list-2d26d.firebaseapp.com"
+      database-url="https://people-list-2d26d.firebaseio.com/"
+      api-key="AIzaSyDY8wMfnJxNulb8E7Kr0s-QC-YdOhGc5l8">
+    </firebase-app>
+
+    <firebase-auth
+      id="auth"
+      user="{{user}}"
+      on-signed-in-changed="_onSignedInChanged">
+    </firebase-auth>
+
+    <h1>People list</h2>
+
+    <user-login id="userLogin"></user-login>
+
+    <firebase-query
+      id="query"
+      path="/users/[[user.uid]]/people"
+      data={{people}}
+      on-data-changed="_onDataChanged"
+    ></firebase-query>
+
+    <template is="dom-if" if="[[loading]]">
+      <div class="loading">
+        <paper-spinner alt="Loading users..." active="true"></paper-spinner>
+        <span>Loading...</span>
+      </div>
+    </template>
+
+    <div hidden$="[[!user]]">
+
+      <template is="dom-if" if="[[!people.length]]">
+        <p>Your people list is empty.</p>
+      </template>
+
+      <ul>
+        <template is="dom-repeat" items="{{people}}" as="person">
+          <li class$="[[person.className]]">
+            [[person.firstName]] [[person.lastName]] ([[person.age]])
+          </li>
+        </template>
+      </ul>
+
+      <p class="note" hidden$="[[!people]]">People average age: <strong>{{ageAverage}}</strong></p>
+
+      <people-list-form id="form" on-people-list-add="_add"></people-list-form>
+
+    </div>
+  </template>
+
+  <script>
+    class PeopleListApp extends Polymer.Element {
+      static get is() { return 'people-list-app'; }
+
+      static get properties () {
+        return {
+          ageAverage: {
+            type: Number,
+            computed: '_peopleChanged(people.splices)'
+          },
+          loading: {
+            type: Boolean,
+            value: false
+          },
+          people: {
+            type: Array,
+            value: function () {
+              return [];
+            }
+          }
+        };
+      }
+
+      _add () {
+        const newPerson = Object.assign({}, this.$.form.payload);
+
+        newPerson.className = this._getClassName(newPerson.age);
+        this.$.query.ref.push(newPerson);
+      }
+
+      _calculateAverage () {
+        if (!this.people) return;
+
+        const accumulate = this.people.reduce((acc, person) => acc + parseInt(person.age, 10), 0);
+        const formattedValue = (accumulate / this.people.length).toFixed(1);
+
+        return formattedValue;
+      }
+
+      _getClassName (age, range, classNames) {
+        const _classNames = classNames || ['lte-19', 'gt-19', 'gt-29', 'gt-39'];
+        let _range = range || 39;
+        let color;
+
+        if (_classNames.length === 1) {
+          return _classNames[0];
+        }
+
+        if (age > _range) {
+          return  _classNames.pop();
+        }
+
+        _classNames.length = _classNames.length - 1;
+        _range = _range - 10;
+
+        return this._getClassName(age, _range, _classNames);
+      }
+
+      _logout () {
+        this.$.userLogin.logout();
+      }
+
+      _onDataChanged () {
+        this.loading = false;
+      }
+
+      _onSignedInChanged (evt) {
+        if (this.$.auth.signedIn) {
+          this.loading = true;
+        }
+      }
+      _peopleChanged () {
+          return this._calculateAverage();
+      }
+    }
+
+    window.customElements.define(PeopleListApp.is, PeopleListApp);
+  </script>
+</dom-module>

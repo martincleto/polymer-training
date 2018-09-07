@@ -1,0 +1,74 @@
+<link rel="import" href="../bower_components/polymer/polymer-element.html">
+<link rel="import" href="../bower_components/polymerfire/firebase-auth.html">
+<link rel="import" href="../bower_components/shadycss/apply-shim.html">
+<link rel="import" href="shared-styles.html">
+
+<dom-module id="user-login">
+  <template>
+    <style include="shared-styles">
+      :host {
+        display: block;
+      }
+
+      .user-info {
+        font-size: var(--user-login-info-font-size, 1rem);
+        color: var(--user-login-info-color, inherit);
+
+        @apply --user-login-info;
+      }
+
+      .user-email {
+        @apply --user-login-email;
+      }
+    </style>
+
+    <firebase-auth
+      id="auth"
+      user="{{user}}"
+      provider="google"
+      status-known="{{statusKnown}}"
+      on-error="handleError">
+    </firebase-auth>
+
+    <template is="dom-if" if="[[!user]]">
+      <p>Please <a href="#" on-click="login">sign in</a> with a valid Google account.</p>
+    </template>
+
+    <template is="dom-if" if="[[user]]">
+      <div class="user-info">
+        <span class="user-email">[[user.email]]</span>
+        <a href="#" on-click="logout">sign out</div>
+    </template>
+  </template>
+
+  <script>
+    class UserLogin extends Polymer.Element {
+      static get is () { return 'user-login'; }
+
+      static get properties () {
+        return {
+          user: {
+            type: Object
+          },
+          statusKnown: {
+            type: Object
+          }
+        };
+      }
+
+      login (evt) {
+        if (evt) evt.preventDefault();
+
+        return this.$.auth.signInWithPopup();
+      }
+
+      logout (evt) {
+        if (evt) evt.preventDefault();
+        
+        return this.$.auth.signOut();
+      }
+    }
+
+    window.customElements.define(UserLogin.is, UserLogin);
+  </script>
+</dom-module>

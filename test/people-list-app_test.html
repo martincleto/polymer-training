@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, minimum-scale=1, initial-scale=1, user-scalable=yes">
+
+    <title>people-list-app test</title>
+
+    <script src="../bower_components/webcomponentsjs/webcomponents-loader.js"></script>
+    <script src="../bower_components/web-component-tester/browser.js"></script>
+
+    <link rel="import" href="../src/people-list-app.html">
+  </head>
+  <body>
+
+    <test-fixture id="testFixture">
+      <template>
+        <people-list-app></people-list-app>
+      </template>
+    </test-fixture>
+
+    <script src="mocks/mockPeople.js"></script>
+    <script>
+      suite('people-list-app', function() {
+        let element;
+        let elementShadowRoot;
+        let server;
+
+        function stubFirebaseQueryRef (element) {
+          const firebaseQueryFakeElement = element.shadowRoot.querySelector('fake-firebase-query');
+
+          firebaseQueryFakeElement.ref = { push: () => {
+            element.push('people', element.$.form.payload);
+          }};
+        }
+
+        setup(() => {
+          replace('firebase-app').with('fake-firebase-app');
+          replace('firebase-auth').with('fake-firebase-auth');
+          replace('firebase-query').with('fake-firebase-query');
+        });
+
+        suite('when user is not logged', () => {
+          setup(() => {
+            element = fixture('testFixture');
+            elementShadowRoot = element.shadowRoot;
+          });
+
+          test('should show a title', () => {
+            const header = elementShadowRoot.querySelector('h1');
+
+            expect(header).not.to.be.a.null;
+            expect(header.textContent).to.be.equal('People list');
+          });
+
+          test('should not show any people', () => {
+            const peopleListItems = elementShadowRoot.querySelectorAll('ul > li');
+
+            expect(element.people.length).to.be.equal(0);
+            expect(peopleListItems.length).to.equal(0);
+          });
+        });
+
+        suite('when user is logged', () => {
+
+          setup(done => {
+            element = fixture('testFixture');
+            element.$.auth.signedIn = true;
+            element.$.auth.dispatchEvent(new CustomEvent('signed-in-changed', { bubbles: true, composed: true }));
+            element.user = {
+              email: 'stephen.strange@marvel.com'
+            }
+            element.$.query.dispatchEvent(new CustomEvent('data-changed', { bubbles: true, composed: true }));
+            elementShadowRoot = element.shadowRoot;
+
+            flush(done);
+          });
+
+          suite('if no people in database', () => {
+
+            test('should not show people ', done => {
+              flush(() => {
+                const peopleListItems = elementShadowRoot.querySelectorAll('ul > li');
+
+                expect(peopleListItems.length).to.be.equal(0);
+                done();
+              });
+            });
+
+            test('should show a message if no people in database', done => {
+              flush(() => {
+                const emptyListMessage = elementShadowRoot.querySelector('div > p').textContent.trim();
+
+                expect(emptyListMessage).to.be.equal('Your people list is empty.');
+                done();
+              });
+            });
+          });
+
+          suite('if people in database', () => {
+            setup(() => {
+              element.people = mockPeople;
+            });
+
+            test('should show people if people in database', done => {
+              flush(() => {
+                const peopleListItems = elementShadowRoot.querySelectorAll('ul > li');
+
+                expect(peopleListItems.length).to.be.equal(mockPeople.length);
+                done();
+              });
+            });
+
+            test('should set a different class name for each person depending on age', done => {
+
+              function _getExpectedClassName (age) {
+                /*
+                 * Spec:
+                 * el color de cada fila estará condicionado por el valor del campo edad:
+                 * - si la persona que se agrega es menor de 20 años la fila deberá mostrarse con el color blanco
+                 * - si es mayor de 19 en #eff7f7
+                 * - si es mayor de 29 en #cbf2f2
+                 * - si es mayor de 39 en #88efef
+                 */
+                let expectedClassName;
+
+                if (age > 39) {
+                  expectedClassName = 'gt-39'; // background-color: #88efef
+                } else if (age > 29) {
+                  expectedClassName = 'gt-29'; // background-color: #cbf2f2
+                } else if (age > 19) {
+                  expectedClassName = 'gt-19'; // background-color: #eff7f7
+                } else {
+                  expectedClassName = 'lte-19'; // background-color: #ffffff
+                }
+
+                return expectedClassName;
+              }
+
+              flush(() => {
+                const peopleListItems = elementShadowRoot.querySelectorAll('ul > li');
+
+                [...peopleListItems].map((listItem, index) => {
+                  const expectedClassName = _getExpectedClassName(element.people[index].age);
+                  const containsClassName = listItem.classList.contains(expectedClassName);
+
+                  expect(containsClassName).to.be.true;
+                });
+
+                done();
+              });
+
+            });
+
+            test('should show the people age average', () => {
+              const ageAverage = elementShadowRoot.querySelector('.note strong').textContent;
+
+              expect(ageAverage).not.to.be.NaN;
+            });
+
+            test('should show a form to add a new person', () => {
+              const formElement = elementShadowRoot.querySelector('people-list-form');
+
+              expect(formElement).not.to.be.a.null;
+            });
+
+            test('should add a new person when form fires add action event', done => {
+              sinon.spy(element, '_add');
+
+              element.$.form.payload = {
+                firstName: 'Stephen',
+                lastName: 'Strange',
+                age: '41'
+              };
+
+              stubFirebaseQueryRef(element);
+
+              flush(() => {
+                const previousPeoplePropertyLength = element.people.length;
+                const previousListItemsLength = elementShadowRoot.querySelectorAll('ul > li').length;
+
+                element.$.form._add();
+
+                expect(element._add.calledOnce).to.be.true;
+                expect(element.people.length).to.be.equal(previousPeoplePropertyLength + 1);
+
+                flush(() => {
+                  const listItems = elementShadowRoot.querySelectorAll('ul > li');
+
+                  expect(listItems.length).to.be.equal(previousListItemsLength + 1);
+                });
+
+                element._add.restore();
+                done();
+              });
+            });
+
+            test('should recalculate age average when a new person is added', done => {
+              sinon.spy(element, '_calculateAverage');
+
+              element.$.form.payload = {
+                firstName: 'Scarlet',
+                lastName: 'Witch',
+                age: '99'
+              };
+
+              stubFirebaseQueryRef(element);
+
+              flush(() => {
+                element.$.form._add();
+
+                expect(element._calculateAverage.calledOnce).to.be.true;
+
+                element._calculateAverage.restore();
+                done();
+              });
+            });
+          });
+        });
+      });
+    </script>
+  </body>
+</html>
