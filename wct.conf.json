@@ -1,9 +1,7 @@
 {
   "plugins": {
     "local": {
-      "browsers": [
-        "chrome"
-      ],
+      "skipSeleniumInstall": true,
       "browserOptions": {
         "chrome": [
           "headless",
@@ -12,6 +10,5 @@
         ]
       }
     }
-  },
-  "verbose": true
+  }
 }

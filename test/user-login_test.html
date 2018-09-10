@@ -6,10 +6,10 @@
 
     <title>user-login test</title>
 
-    <script src="../../bower_components/webcomponentsjs/webcomponents-loader.js"></script>
-    <script src="../../bower_components/web-component-tester/browser.js"></script>
+    <script src="../bower_components/webcomponentsjs/webcomponents-loader.js"></script>
+    <script src="../bower_components/web-component-tester/browser.js"></script>
 
-    <link rel="import" href="../../src/user-login.html">
+    <link rel="import" href="../src/user-login.html">
   </head>
   <body>
 
@@ -52,7 +52,7 @@
         suite('when user is not logged', () => {
           test('should show a button to sign in', done => {
             element.user = null;
-            
+
             flush(() => {
               const button = elementShadowRoot.querySelector('a');
 
