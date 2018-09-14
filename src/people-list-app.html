@@ -73,7 +73,7 @@
       }
 
       people-list-form {
-        margin-top: 2rem;
+        padding: 0 1rem;
       }
 
       .loading {
@@ -124,7 +124,7 @@
       }
 
       .float-btn {
-        position: absolute;
+        position: fixed;
         bottom: 1rem;
         right: 1rem;
         width: 48px;
@@ -145,28 +145,29 @@
         color: #000;
       }
 
-      @media (min-width: 600px) {
-        main {
+      @media screen and (min-width: 600px) {
+        main,
+        people-list-form {
           max-width: 80%;
           margin: 0 auto;
+        }
+      }
+
+      @media screen and (min-width: 900px) {
+        main,
+        people-list-form {
+          max-width: 70%;
         }
 
         .float-btn {
           position: static;
-          bottom: auto;
-          right: auto;
           float: right;
         }
       }
 
-      @media (min-width: 900px) {
-        main {
-          max-width: 70%;
-        }
-      }
-
-      @media (min-width: 900px) {
-        main {
+      @media screen and (min-width: 1200px) {
+        main,
+        people-list-form {
           max-width: 60%;
         }
       }
@@ -239,12 +240,13 @@
               icon="close"
               on-tap="_resetForm"></paper-icon-button>
           </div>
-
-          <people-list-form
-            id="form"
-            on-people-list-form-add="_add"
-            on-people-list-form-cancel="_cancel">
-          </people-list-form>
+          <paper-dialog-scrollable>
+            <people-list-form
+              id="form"
+              on-people-list-form-add="_add"
+              on-people-list-form-cancel="_cancel">
+            </people-list-form>
+          </paper-dialog-scrollable>
         </paper-dialog>
       </template>
     </main>

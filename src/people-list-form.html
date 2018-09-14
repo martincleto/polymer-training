@@ -26,7 +26,7 @@
       }
     </style>
 
-    <main>
+    <div class="people-list-form-wrapper">
       <h2>Add a new person</h2>
 
       <iron-form id="ironForm" on-keydown="_checkKeydown">
@@ -34,6 +34,7 @@
           <paper-input
             required
             always-float-label
+            autofocus
             auto-validate
             label="First Name"
             error-message="This field is required"
@@ -70,7 +71,7 @@
           </div>
         </form>
       </iron-form>
-    </main>
+    </div>
   </template>
 
   <script>
