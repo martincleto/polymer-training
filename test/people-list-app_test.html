@@ -26,11 +26,11 @@
         let elementShadowRoot;
         let server;
 
-        function stubFirebaseQueryRef (element) {
+        function stubFirebaseQueryRef (element, formElement) {
           const firebaseQueryFakeElement = element.shadowRoot.querySelector('fake-firebase-query');
 
           firebaseQueryFakeElement.ref = { push: () => {
-            element.push('people', element.$.form.payload);
+            element.push('people', formElement.payload);
           }};
         }
 
@@ -38,12 +38,14 @@
           replace('firebase-app').with('fake-firebase-app');
           replace('firebase-auth').with('fake-firebase-auth');
           replace('firebase-query').with('fake-firebase-query');
+          element = fixture('testFixture');
+          elementShadowRoot = element.shadowRoot;
         });
 
         suite('when user is not logged', () => {
           setup(() => {
-            element = fixture('testFixture');
-            elementShadowRoot = element.shadowRoot;
+            // element = fixture('testFixture');
+            // elementShadowRoot = element.shadowRoot;
           });
 
           test('should show a title', () => {
@@ -53,18 +55,21 @@
             expect(header.textContent).to.be.equal('People list');
           });
 
-          test('should not show any people', () => {
-            const peopleListItems = elementShadowRoot.querySelectorAll('ul > li');
+          test('should not show any people', done => {
+            flush(() => {
+              const peopleListItems = elementShadowRoot.querySelectorAll('ul > li');
 
-            expect(element.people.length).to.be.equal(0);
-            expect(peopleListItems.length).to.equal(0);
+              expect(element.people).to.be.undefined;
+              expect(peopleListItems.length).to.equal(0);
+              done();
+            });
           });
         });
 
         suite('when user is logged', () => {
 
           setup(done => {
-            element = fixture('testFixture');
+            //element = fixture('testFixture');
             element.$.auth.signedIn = true;
             element.$.auth.dispatchEvent(new CustomEvent('signed-in-changed', { bubbles: true, composed: true }));
             element.user = {
@@ -78,6 +83,10 @@
 
           suite('if no people in database', () => {
 
+            setup(() => {
+              element.people = [];
+            });
+
             test('should not show people ', done => {
               flush(() => {
                 const peopleListItems = elementShadowRoot.querySelectorAll('ul > li');
@@ -89,17 +98,20 @@
 
             test('should show a message if no people in database', done => {
               flush(() => {
-                const emptyListMessage = elementShadowRoot.querySelector('div > p').textContent.trim();
+                const emptyListMessage = elementShadowRoot.querySelector('ul ~ p').textContent.trim();
 
-                expect(emptyListMessage).to.be.equal('Your people list is empty.');
+                expect(emptyListMessage).to.be.equal('Your list is empty');
                 done();
               });
             });
           });
 
           suite('if people in database', () => {
+            let formElement;
+
             setup(() => {
               element.people = mockPeople;
+              formElement = element.shadowRoot.querySelector('people-list-form');
             });
 
             test('should show people if people in database', done => {
@@ -118,18 +130,18 @@
                  * Spec:
                  * el color de cada fila estará condicionado por el valor del campo edad:
                  * - si la persona que se agrega es menor de 20 años la fila deberá mostrarse con el color blanco
-                 * - si es mayor de 19 en #eff7f7
-                 * - si es mayor de 29 en #cbf2f2
-                 * - si es mayor de 39 en #88efef
+                 * - si es mayor de 19 en #e1f5fe
+                 * - si es mayor de 29 en #b3e5fc
+                 * - si es mayor de 39 en #81d4fa
                  */
                 let expectedClassName;
 
                 if (age > 39) {
-                  expectedClassName = 'gt-39'; // background-color: #88efef
+                  expectedClassName = 'gt-39'; // background-color: #81d4fa
                 } else if (age > 29) {
-                  expectedClassName = 'gt-29'; // background-color: #cbf2f2
+                  expectedClassName = 'gt-29'; // background-color: #b3e5fc
                 } else if (age > 19) {
-                  expectedClassName = 'gt-19'; // background-color: #eff7f7
+                  expectedClassName = 'gt-19'; // background-color: #e1f5fe
                 } else {
                   expectedClassName = 'lte-19'; // background-color: #ffffff
                 }
@@ -152,34 +164,35 @@
 
             });
 
-            test('should show the people age average', () => {
-              const ageAverage = elementShadowRoot.querySelector('.note strong').textContent;
+            test('should show the people age average', done => {
+              flush(() => {
+                const ageAverage = elementShadowRoot.querySelector('.note strong').textContent;
 
-              expect(ageAverage).not.to.be.NaN;
+                expect(ageAverage).not.to.be.NaN;
+                done();
+              });
             });
 
             test('should show a form to add a new person', () => {
-              const formElement = elementShadowRoot.querySelector('people-list-form');
-
               expect(formElement).not.to.be.a.null;
             });
 
             test('should add a new person when form fires add action event', done => {
               sinon.spy(element, '_add');
 
-              element.$.form.payload = {
+              formElement.payload = {
                 firstName: 'Stephen',
                 lastName: 'Strange',
                 age: '41'
               };
 
-              stubFirebaseQueryRef(element);
+              stubFirebaseQueryRef(element, formElement);
 
               flush(() => {
                 const previousPeoplePropertyLength = element.people.length;
                 const previousListItemsLength = elementShadowRoot.querySelectorAll('ul > li').length;
 
-                element.$.form._add();
+                formElement._add();
 
                 expect(element._add.calledOnce).to.be.true;
                 expect(element.people.length).to.be.equal(previousPeoplePropertyLength + 1);
@@ -198,16 +211,16 @@
             test('should recalculate age average when a new person is added', done => {
               sinon.spy(element, '_calculateAverage');
 
-              element.$.form.payload = {
+              formElement.payload = {
                 firstName: 'Scarlet',
                 lastName: 'Witch',
                 age: '99'
               };
 
-              stubFirebaseQueryRef(element);
+              stubFirebaseQueryRef(element, formElement);
 
               flush(() => {
-                element.$.form._add();
+                formElement._add();
 
                 expect(element._calculateAverage.calledOnce).to.be.true;
 

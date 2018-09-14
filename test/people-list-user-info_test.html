@@ -9,19 +9,19 @@
     <script src="../bower_components/webcomponentsjs/webcomponents-loader.js"></script>
     <script src="../bower_components/web-component-tester/browser.js"></script>
 
-    <link rel="import" href="../src/user-login.html">
+    <link rel="import" href="../src/people-list-user-info.html">
   </head>
   <body>
 
     <test-fixture id="BasicTestFixture">
       <template>
-        <user-login></user-login>
+        <people-list-user-info></people-list-user-info>
       </template>
     </test-fixture>
 
     <script>
 
-      suite('user-login', function() {
+      suite('people-list-user-info', function() {
         let element;
         let elementShadowRoot;
 
@@ -49,42 +49,30 @@
           expect(typeof element.logout).to.be.equal('function');
         });
 
-        suite('when user is not logged', () => {
-          test('should show a button to sign in', done => {
-            element.user = null;
-
-            flush(() => {
-              const button = elementShadowRoot.querySelector('a');
-
-              expect(button).not.to.be.a.null;
-              expect(button.textContent).to.be.equal('sign in');
-              done();
-            });
-          });
-        });
-
         suite('when user is logged', () => {
           setup(() => {
             element.user = {
-              email: 'mighty.thor@walhalla.com'
+              displayName: 'Frank Miller'
             };
           });
 
-          test('show should the user email', done => {
-            flush(() => {
-              const userEmail = elementShadowRoot.querySelector('.user-email').textContent.trim();
+          test('show should the user short name', done => {
+            const expectedUserShortName = 'Frank';
 
-              expect(userEmail).to.be.equal(element.user.email);
+            flush(() => {
+              const userName = elementShadowRoot.querySelector('.user-name').textContent.trim();
+
+              expect(userName).to.be.equal(expectedUserShortName);
               done();
             });
           });
 
           test('should show a button to sign out', done => {
             flush(() => {
-              const button = elementShadowRoot.querySelector('a');
+              const button = elementShadowRoot.querySelector('paper-button');
 
               expect(button).not.to.be.a.null;
-              expect(button.textContent).to.be.equal('sign out');
+              expect(button.textContent).to.be.equal('Sign out');
               done();
             });
           });

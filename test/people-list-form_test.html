@@ -6,14 +6,14 @@
 
     <title>people-list-app test</title>
 
-    <script src="../bower_components/webcomponentsjs/webcomponents-loader.js"></script>
-    <script src="../bower_components/web-component-tester/browser.js"></script>
+    <script src="/bower_components/webcomponentsjs/webcomponents-loader.js"></script>
+    <script src="/bower_components/web-component-tester/browser.js"></script>
 
     <link rel="import" href="../src/people-list-form.html">
   </head>
   <body>
 
-    <test-fixture id="BasicTestFixture">
+    <test-fixture id="testFixture">
       <template>
         <people-list-form></people-list-form>
       </template>
@@ -21,68 +21,106 @@
 
     <script>
       suite('people-list-form', () => {
-        let element = fixture('BasicTestFixture');
-        let elementShadowRoot = element.shadowRoot;
+        let element;
+        let elementShadowRoot;
+        let ironForm;
+        let fields;
+        let buttons;
+        let stubIronFormValidate;
 
-        test('should show fields for entering First Name, Last Name and Age', () => {
-          const elementFields = elementShadowRoot.querySelectorAll('paper-input');
-
-          expect(elementFields[0]).not.to.be.null;
-          expect(elementFields[0].label).to.be.equal('First Name');
-          expect(elementFields[1]).not.to.be.null;
-          expect(elementFields[1].label).to.be.equal('Last Name');
-          expect(elementFields[2]).not.to.be.null;
-          expect(elementFields[2].label).to.be.equal('Age');
+        setup(() => {
+          element = fixture('testFixture');
+          elementShadowRoot = element.shadowRoot;
+          ironForm = elementShadowRoot.querySelector('iron-form');
+          fields = elementShadowRoot.querySelectorAll('paper-input');
+          buttons = elementShadowRoot.querySelectorAll('paper-button');
         });
 
-        test('should show a `Add` button to perform add action', () => {
-          button = elementShadowRoot.querySelector('paper-button');
-          const buttonLabel = button.textContent.trim() || null;
+        test('should not fire any event if form is not valid', () => {
+          const buttonAdd = buttons[0];
+          const stubIronFormValidate = sinon.stub(ironForm, 'validate', () => false);
+          const spyOnDispatchEvent = sinon.spy(element.__proto__, 'dispatchEvent');
 
-          expect(button).not.to.be.null;
+          function _invalidExpect () {
+            console.log(spyOnDispatchEvent.getCalls());
+            expect(spyOnDispatchEvent.called).not.to.be.true;
+          }
+
+          buttonAdd.addEventListener('click', _invalidExpect);
+          buttonAdd.click();
+
+          buttonAdd.removeEventListener('click', _invalidExpect);
+          spyOnDispatchEvent.restore();
+          stubIronFormValidate.restore();
+        });
+
+        test('should fire an `people-list-add` event if form is valid', () => {
+          const buttonAdd = buttons[0];
+          const stubIronFormValidate = sinon.stub(ironForm, 'validate', () => true);
+          const spyOnDispatchEvent = sinon.spy(element.__proto__, 'dispatchEvent');
+
+          function _validExpect () {
+            console.log(spyOnDispatchEvent.getCalls());
+            expect(spyOnDispatchEvent.calledOnce).to.be.true;
+            expect(spyOnDispatchEvent.args[0][0].type).to.be.equal('people-list-form-add');
+          }
+
+          buttonAdd.addEventListener('click', _validExpect);
+          buttonAdd.click();
+
+          buttonAdd.removeEventListener('click', _validExpect);
+          spyOnDispatchEvent.restore();
+        });
+
+        test('should show fields for entering First Name, Last Name and Age', () => {
+          fields = elementShadowRoot.querySelectorAll('paper-input');
+
+          expect(fields[0]).not.to.be.null;
+          expect(fields[0].label).to.be.equal('First Name');
+          expect(fields[1]).not.to.be.null;
+          expect(fields[1].label).to.be.equal('Last Name');
+          expect(fields[2]).not.to.be.null;
+          expect(fields[2].label).to.be.equal('Age');
+        });
+
+        test('should show a `Add` button', () => {
+          buttonAdd = buttons[0];
+          const buttonLabel = buttonAdd.textContent.trim() || null;
+
+          expect(buttonAdd).not.to.be.null;
           expect(buttonLabel).to.be.equal('Add');
         });
 
-        suite('when user clicks on `Add` button', () => {
-          setup(() => {
-            sinon.spy(element, 'dispatchEvent');
-          });
+        test('should show a `Cancel` button', () => {
+          buttonCancel = buttons[1];
+          const buttonLabel = buttonCancel.textContent.trim() || null;
 
-          teardown(() => {
-            element.dispatchEvent.restore();
-          });
+          expect(buttonCancel).not.to.be.null;
+          expect(buttonLabel).to.be.equal('Cancel');
+        });
 
-          test('should fire an error event if form is not valid', () => {
-            const button = elementShadowRoot.querySelector('paper-button');
+        suite('when user tap enter key', () => {
+          test('should attemp add a new person', () => {
+            sinon.spy(element, '_add');
 
-            function _invalidExpect () {
-              const dispatchEventArg = new CustomEvent('people-list-error', { bubbles: true, composed: true });
-              expect(element.error).to.be.true;
-              expect(element.dispatchEvent.withArgs(dispatchEventArg).called);
+            function _createKeyboardEvent (value) {
+              return new KeyboardEvent('keydown', {key: value});
             }
 
-            button.addEventListener('click', _invalidExpect);
-            button.click();
-
-            button.removeEventListener('click', _invalidExpect);
-          });
-
-          test('should fire an event if form is valid', () => {
-
-            element.set('payload.firstName', 'Peter');
-            element.set('payload.lastName', 'Parker');
-            element.set('payload.age', '26');
-
-            function _validExpect () {
-              const dispatchEventArg = new CustomEvent('people-list-add', { bubbles: true, composed: true });
-              expect(element.error).to.be.false;
-              expect(element.dispatchEvent.withArgs(dispatchEventArg).called);
+            function _keydownExpect (evt) {
+              if (evt.key === 'Enter') {
+                expect(element._add.calledOnce).to.be.true;
+              } else {
+                expect(element._add.called).to.be.false;
+              }
             }
 
-            button.addEventListener('click', _validExpect);
-            button.click();
+            element.$.ironForm.addEventListener('keydown', _keydownExpect);
+            element.$.ironForm.dispatchEvent(_createKeyboardEvent('a'));
+            element.$.ironForm.dispatchEvent(_createKeyboardEvent('Enter'));
 
-            button.removeEventListener('click', _validExpect);
+            element.$.ironForm.removeEventListener('keydown', _keydownExpect);
+            element._add.restore();
           });
         });
       });

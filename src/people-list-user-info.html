@@ -1,0 +1,88 @@
+<link rel="import" href="/bower_components/polymer/polymer-element.html">
+<link rel="import" href="/bower_components/polymerfire/firebase-auth.html">
+<link rel="import" href="/bower_components/shadycss/apply-shim.html">
+<link rel="import" href="/bower_components/paper-button/paper-button.html">
+
+<link rel="import" href="shared-styles.html">
+
+<dom-module id="people-list-user-info">
+  <template>
+    <style include="shared-styles">
+      :host {
+        display: block;
+
+        @apply --user-login-info;
+      }
+
+      .user-info {
+        font-size: var(--user-login-info-font-size, 1rem);
+        color: var(--user-login-info-color, inherit);
+        padding-bottom: 1rem;
+        border-bottom: solid 1px var(--paper-grey-300, #e0e0e0);
+        margin-bottom: 1rem;
+      }
+
+      .user-photo {
+        width: var(--user-login-info-width, 40px);
+        height: auto;
+        vertical-align: middle;
+        border-radius: calc(var(--user-login-info-width, 40px) / 2);
+        margin-right: .5rem;
+      }
+    </style>
+
+    <firebase-auth
+      id="auth"
+      user="{{user}}"
+      provider="google">
+    </firebase-auth>
+
+    <template is="dom-if" if="[[user]]">
+        <div class="user-info">
+          <img src="[[user.photoURL]]" class="user-photo" alt="[[userShortName]]'s avatar">
+          <span class="user-name">[[userShortName]]</span>
+          <paper-button raised on-tap="logout">Sign out</paper-button>
+        </div>
+    </template>
+  </template>
+
+  <script>
+    class PeopleListUserInfo extends Polymer.Element {
+      static get is () { return 'people-list-user-info'; }
+
+      static get properties () {
+        return {
+          user: {
+            type: Object
+          },
+          userShortName: {
+            type: String,
+            computed: '_userChanged(user.displayName)'
+          }
+        };
+      }
+
+      _userChanged (userDisplayName) {
+        if (userDisplayName) {
+          return this.user.displayName.split(' ')[0];
+        }
+      }
+
+      login (evt) {
+        if (evt) evt.preventDefault();
+
+        this.dispatchEvent(new CustomEvent('people-list-sign-in', { bubbles: true, composed: true }));
+        return this.$.auth.signInWithPopup();
+      }
+
+      logout (evt) {
+        if (evt) evt.preventDefault();
+
+        this.dispatchEvent(new CustomEvent('people-list-sign-out', { bubbles: true, composed: true }));
+        return this.$.auth.signOut();
+      }
+    }
+
+    window.customElements.define(PeopleListUserInfo.is, PeopleListUserInfo);
+  </script>
+</dom-module>

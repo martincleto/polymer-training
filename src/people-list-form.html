@@ -1,8 +1,7 @@
-<link rel="import" href="../bower_components/polymer/polymer-element.html">
-<link rel="import" href="../bower_components/iron-form/iron-form.html">
-<link rel="import" href="../bower_components/iron-icons/iron-icons.html">
-<link rel="import" href="../bower_components/paper-input/paper-input.html">
-<link rel="import" href="../bower_components/paper-button/paper-button.html">
+<link rel="import" href="/bower_components/polymer/polymer-element.html">
+<link rel="import" href="/bower_components/iron-form/iron-form.html">
+<link rel="import" href="/bower_components/paper-input/paper-input.html">
+<link rel="import" href="/bower_components/paper-button/paper-button.html">
 
 <dom-module id="people-list-form">
   <template>
@@ -11,52 +10,67 @@
         display: block;
       }
 
-      h2 {
-        margin-bottom: .5rem;
+      .people-list-buttons {
+        text-align: right;
+        padding-top: 1rem;
       }
 
-      .error {
-        font-weight: bold;
-        color: red;
+      .people-list-button-add {
+        background-color: var(--paper-light-blue-900, var(--people-list--primary-color));
+        color: #fff;
+      }
+
+      .people-list-button-cancel {
+        background-color: var(--paper-grey-300, #e0e0e0);
+        color: var(--paper-grey-700, #616161);
       }
     </style>
 
-    <h2>Add a new person</h2>
+    <main>
+      <h2>Add a new person</h2>
 
-    <iron-form id="ironForm">
-      <form>
-        <paper-input
-          required
-          always-float-label
-          label="First Name"
-          error-message="This field is required"
-          value="{{payload.firstName}}">
-        </paper-input>
+      <iron-form id="ironForm" on-keydown="_checkKeydown">
+        <form>
+          <paper-input
+            required
+            always-float-label
+            auto-validate
+            label="First Name"
+            error-message="This field is required"
+            value="{{payload.firstName}}">
+          </paper-input>
 
-        <paper-input
-          required
-          always-float-label
-          label="Last Name"
-          error-message="This field is required"
-          value="{{payload.lastName}}">
-        </paper-input>
+          <paper-input
+            required
+            always-float-label
+            label="Last Name"
+            error-message="This field is required"
+            value="{{payload.lastName}}">
+          </paper-input>
 
-        <paper-input
-          required
-          always-float-label
-          label="Age"
-          type="number"
-          allowed-pattern="[0-9]"
-          maxlength="3"
-          error-message="This field is required"
-          value="{{payload.age}}">
-        </paper-input>
+          <paper-input
+            required
+            always-float-label
+            label="Age"
+            allowed-pattern="[0-9]+"
+            maxlength="2"
+            error-message="Please enter an age under 100"
+            value="{{payload.age}}">
+          </paper-input>
 
-        <paper-button on-tap="_add">
-          <iron-icon icon="icons:add-box"></iron-icon> Add
-        </paper-button>
-      </form>
-    </iron-form>
+          <div class="people-list-buttons">
+            <paper-button
+              raised
+              class="people-list-button-add"
+              on-tap="_add">Add</paper-button>
+            <paper-button
+              raised
+              class="people-list-button-cancel"
+              on-tap="_cancel">Cancel</paper-button>
+          </div>
+        </form>
+      </iron-form>
+    </main>
   </template>
 
   <script>
@@ -75,33 +89,35 @@
               }
             },
             notify: true
-          },
-          error: {
-            type: Boolean,
-            value: false,
-            observer: '_onError'
           }
         };
       }
 
       _add () {
         if (this._validate()) {
-          this.dispatchEvent(new CustomEvent('people-list-add', { bubbles: true, composed: true }));
+          console.log('!!! _add this payload', this.payload);
+          this.dispatchEvent(new CustomEvent('people-list-form-add', { bubbles: true, composed: true }));
           this.$.ironForm.reset();
         }
       }
 
-      _validate () {
-        const isValid = this.$.ironForm.validate();
-
-        this.error = !isValid;
-        return isValid;
+      _cancel () {
+          this.dispatchEvent(new CustomEvent('people-list-form-cancel', { bubbles: true, composed: true }));
+          this.$.ironForm.reset();
       }
 
-      _onError (error) {
-        if (error) {
-          this.dispatchEvent(new CustomEvent('people-list-error', { bubbles: true, composed: true }));
+      _checkKeydown (evt) {
+        if (evt.key === 'Enter') {
+          this._add();
         }
+      }
+
+      _validate () {
+        console.log('!!!', this.$.ironForm.validate);
+        const isValid = this.$.ironForm.validate();
+
+        console.log('!!! isValid', isValid);
+        return isValid;
       }
     }
 

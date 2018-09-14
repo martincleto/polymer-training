@@ -1,7 +1,8 @@
 {
+  "expanded": true,
   "plugins": {
     "local": {
-      "skipSeleniumInstall": true,
+      "skipSeleniumInstall": false,
       "browserOptions": {
         "chrome": [
           "headless",

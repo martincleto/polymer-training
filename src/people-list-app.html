@@ -1,11 +1,20 @@
-<link rel="import" href="../bower_components/polymer/polymer-element.html">
-<link rel="import" href="../bower_components/polymerfire/firebase-app.html">
-<link rel="import" href="../bower_components/polymerfire/firebase-auth.html">
-<link rel="import" href="../bower_components/polymerfire/firebase-query.html">
-<link rel="import" href="../bower_components/paper-spinner/paper-spinner.html">
-<link rel="import" href="../bower_components/shadycss/apply-shim.html">
+<link rel="import" href="/bower_components/polymer/polymer-element.html">
+<link rel="import" href="/bower_components/shadycss/apply-shim.html">
+<link rel="import" href="/bower_components/polymerfire/firebase-app.html">
+<link rel="import" href="/bower_components/polymerfire/firebase-auth.html">
+<link rel="import" href="/bower_components/polymerfire/firebase-query.html">
+<link rel="import" href="/bower_components/app-layout/app-header/app-header.html">
+<link rel="import" href="/bower_components/app-layout/app-drawer/app-drawer.html">
+<link rel="import" href="/bower_components/iron-icons/iron-icons.html">
+<link rel="import" href="/bower_components/neon-animation/web-animations.html">
+<link rel="import" href="/bower_components/neon-animation/animations/scale-up-animation.html">
+<link rel="import" href="/bower_components/neon-animation/animations/fade-out-animation.html">
+<link rel="import" href="/bower_components/paper-dialog/paper-dialog.html">
+<link rel="import" href="/bower_components/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="/bower_components/paper-spinner/paper-spinner.html">
+
 <link rel="import" href="shared-styles.html">
-<link rel="import" href="user-login.html">
+<link rel="import" href="people-list-user-info.html">
 <link rel="import" href="people-list-form.html">
 
 <dom-module id="people-list-app">
@@ -14,22 +23,44 @@
       :host {
         display: block;
         font-family: 'Roboto', sans-serif;
-        padding: 1rem;
 
-        --user-login-info: {
-          position: absolute;
-          top: 0;
-          right: 0;
-          color: #555;
-          font-size: .9rem;
-          line-height: 1.8rem;
-          padding: 1rem 0;
+        --app-drawer-width: 300px;
+        --people-list-header-height: 48px;
+        --people-list-primary-color: #01579b;
+        --user-login-info-font-size: .9rem;
+
+        --paper-dialog: {
+          top: 3rem;
+          width: 100%;
+          height: 100%;
           margin: 0;
+          z-index: 999;
         }
+      }
 
-        --user-login-email: {
-          display: none;
-        }
+      main {
+        padding-top: var(--people-list-header-height);
+      }
+
+      app-header {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 3rem;
+        background-color: var(--paper-light-blue-900, var(--people-list-primary-color));
+        color: #fff;
+      }
+
+      app-header h1 {
+        display: inline-block;
+        line-height: var(--people-list-header-height);
+        vertical-align: middle;
+        margin: 0;
+      }
+
+      app-drawer[align="start"] {
+        z-index: 9999;
       }
 
       ul {
@@ -57,23 +88,28 @@
         align-items: center;
         justify-content: center;
         background-color: #fff;
-        z-index: 9999
+        z-index: 9999;
       }
 
-      .loading span {
-        padding-left: 1rem;
+      [hidden] {
+        display: none;
+      }
+
+      .msg,
+      .menu {
+        padding: 1rem;
       }
 
       .gt-39 {
-        background-color: #88efef;
+        background-color: var(--paper-light-blue-200, #81d4fa);
       }
 
       .gt-29 {
-        background-color: #cbf2f2;
+        background-color: var(--paper-light-blue-100, #b3e5fc);
       }
 
       .gt-19 {
-        background-color: #eff7f7;
+        background-color: var(--paper-light-blue-50, #e1f5fe);
       }
 
       .lte-19 {
@@ -87,13 +123,54 @@
         padding: 0 1rem;
       }
 
-      @media (min-width: 600px) {
-        :host {
-          position: relative;
+      .float-btn {
+        position: absolute;
+        bottom: 1rem;
+        right: 1rem;
+        width: 48px;
+        height: 48px;
+        background-color: var(--paper-light-blue-900, #01579b);
+        color: #fff;
+        border-radius: 24px;
+        z-index: 990;
+      }
 
-          --user-login-email_-_display: inline;
+      paper-dialog .paper-dialog-buttons {
+        position: absolute;
+        padding: 0;
+        right: 0;
+      }
+
+      paper-dialog [dialog-dismiss] {
+        color: #000;
+      }
+
+      @media (min-width: 600px) {
+        main {
+          max-width: 80%;
+          margin: 0 auto;
+        }
+
+        .float-btn {
+          position: static;
+          bottom: auto;
+          right: auto;
+          float: right;
         }
       }
+
+      @media (min-width: 900px) {
+        main {
+          max-width: 70%;
+        }
+      }
+
+      @media (min-width: 900px) {
+        main {
+          max-width: 60%;
+        }
+      }
+
     </style>
 
     <firebase-app
@@ -104,47 +181,73 @@
 
     <firebase-auth
       id="auth"
-      user="{{user}}"
-      on-signed-in-changed="_onSignedInChanged">
+      user="{{user}}">
     </firebase-auth>
-
-    <h1>People list</h2>
-
-    <user-login id="userLogin"></user-login>
 
     <firebase-query
       id="query"
       path="/users/[[user.uid]]/people"
-      data={{people}}
-      on-data-changed="_onDataChanged"
-    ></firebase-query>
+      data="{{people}}">
+    </firebase-query>
 
-    <template is="dom-if" if="[[loading]]">
-      <div class="loading">
-        <paper-spinner alt="Loading users..." active="true"></paper-spinner>
-        <span>Loading...</span>
+    <div id="loadingLayer" class="loading">
+      <paper-spinner alt="Loading" active="true"></paper-spinner>
+    </div>
+
+    <app-header reveals>
+      <paper-icon-button icon="menu" on-tap="_toggleMenu"></paper-icon-button>
+      <h1>People list</h1>
+    </app-header>
+
+    <app-drawer id="menuDrawer" align="start">
+      <div class="menu">
+        <people-list-user-info
+          id="userInfo"
+          on-people-list-sign-out="_onPeopleListSignOut">
+        </people-list-user-info>
       </div>
-    </template>
+    </app-drawer>
 
-    <div hidden$="[[!user]]">
-
-      <template is="dom-if" if="[[!people.length]]">
-        <p>Your people list is empty.</p>
+    <main>
+      <template is="dom-if" if="[[!user]]">
+        <p class="msg">Please <a href="#" on-click="_login">sign in</a> with a valid Google account.</p>
       </template>
 
-      <ul>
-        <template is="dom-repeat" items="{{people}}" as="person">
-          <li class$="[[person.className]]">
-            [[person.firstName]] [[person.lastName]] ([[person.age]])
-          </li>
+      <template is="dom-if" if="[[user]]">
+        <ul>
+          <template is="dom-repeat" items="{{people}}">
+            <li class$="[[item.className]]">
+              [[item.firstName]] [[item.lastName]] ([[item.age]])
+            </li>
+          </template>
+        </ul>
+
+        <template is="dom-if" if="[[!people.length]]">
+          <p class="msg">Your list is empty</p>
         </template>
-      </ul>
 
-      <p class="note" hidden$="[[!people]]">People average age: <strong>{{ageAverage}}</strong></p>
+        <template is="dom-if" if="[[people.length]]">
+          <p class="note">People average age: <strong>{{ageAverage}}</strong></p>
+        </template>
 
-      <people-list-form id="form" on-people-list-add="_add"></people-list-form>
+        <paper-icon-button icon="add" class="float-btn" on-tap="_openDialog"></paper-icon-button>
 
-    </div>
+        <paper-dialog entry-animation="scale-up-animation" exit-animation="fade-out-animation">
+          <div class="paper-dialog-buttons">
+            <paper-icon-button
+              dialog-dismiss
+              icon="close"
+              on-tap="_resetForm"></paper-icon-button>
+          </div>
+
+          <people-list-form
+            id="form"
+            on-people-list-form-add="_add"
+            on-people-list-form-cancel="_cancel">
+          </people-list-form>
+        </paper-dialog>
+      </template>
+    </main>
   </template>
 
   <script>
@@ -155,26 +258,26 @@
         return {
           ageAverage: {
             type: Number,
-            computed: '_peopleChanged(people.splices)'
+            computed: '_calculateAverage(people.splices)'
           },
           loading: {
             type: Boolean,
-            value: false
+            value: true
           },
           people: {
             type: Array,
-            value: function () {
-              return [];
-            }
+            observer: '_peopleChanged'
           }
         };
       }
 
       _add () {
-        const newPerson = Object.assign({}, this.$.form.payload);
+        const form = this.shadowRoot.querySelector('people-list-form');
+        const newPerson = Object.assign({}, form.payload);
 
         newPerson.className = this._getClassName(newPerson.age);
         this.$.query.ref.push(newPerson);
+        this.shadowRoot.querySelector('paper-dialog').close();
       }
 
       _calculateAverage () {
@@ -184,6 +287,10 @@
         const formattedValue = (accumulate / this.people.length).toFixed(1);
 
         return formattedValue;
+      }
+
+      _cancel () {
+        this.shadowRoot.querySelector('paper-dialog').close();
       }
 
       _getClassName (age, range, classNames) {
@@ -205,21 +312,32 @@
         return this._getClassName(age, _range, _classNames);
       }
 
-      _logout () {
-        this.$.userLogin.logout();
+      _login (evt) {
+        this.$.userInfo.login(evt);
       }
 
-      _onDataChanged () {
-        this.loading = false;
+      _onPeopleListSignOut () {
+        this._toggleMenu();
       }
 
-      _onSignedInChanged (evt) {
-        if (this.$.auth.signedIn) {
-          this.loading = true;
+      _openDialog () {
+        this.shadowRoot.querySelector('paper-dialog').open();
+      }
+
+      _peopleChanged () {
+        if (!this.$.loadingLayer.hidden) {
+          setTimeout(() => {
+            this.$.loadingLayer.hidden = true;
+          }, 500);
         }
       }
-      _peopleChanged () {
-          return this._calculateAverage();
+
+      _resetForm () {
+        this.shadowRoot.querySelector('people-list-form')._cancel();
+      }
+
+      _toggleMenu () {
+        this.$.menuDrawer.toggle();
       }
     }
 
