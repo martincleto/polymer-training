@@ -95,7 +95,6 @@
 
       _add () {
         if (this._validate()) {
-          console.log('!!! _add this payload', this.payload);
           this.dispatchEvent(new CustomEvent('people-list-form-add', { bubbles: true, composed: true }));
           this.$.ironForm.reset();
         }
@@ -113,10 +112,8 @@
       }
 
       _validate () {
-        console.log('!!!', this.$.ironForm.validate);
         const isValid = this.$.ironForm.validate();
 
-        console.log('!!! isValid', isValid);
         return isValid;
       }
     }
